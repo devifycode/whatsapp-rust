@@ -54,7 +54,7 @@ fn main() -> wry::Result<()> {
 
     let init_script = include_str!("inject.js");
 
-    let _webview = WebViewBuilder::new_with_web_context(&mut web_context)
+    let _webview = WebViewBuilder::with_web_context(&mut web_context)
         .with_url(WHATSAPP_WEB_URL)
         .with_user_agent(CHROME_USER_AGENT)
         .with_initialization_script(init_script)
