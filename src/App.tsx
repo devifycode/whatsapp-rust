@@ -627,6 +627,82 @@ export default function App() {
     }, 2000);
   };
 
+  const [uiZoom, setUiZoom] = useState<number>(() => {
+    try {
+      const saved = parseFloat(localStorage.getItem('wa_rust_ui_zoom') || '1.0');
+      if (!Number.isNaN(saved) && saved >= 0.5 && saved <= 2.0) {
+        return Math.round(saved * 100) / 100;
+      }
+    } catch {}
+    return 1.0;
+  });
+
+  const applyUiZoom = (nextZoom: number) => {
+    const clamped = Math.min(2.0, Math.max(0.5, Math.round(nextZoom * 100) / 100));
+    setUiZoom(clamped);
+    try {
+      localStorage.setItem('wa_rust_ui_zoom', String(clamped));
+    } catch {}
+    triggerToast(`Zoom tampilan: ${Math.round(clamped * 100)}% (Ctrl + 0 untuk reset)`);
+  };
+
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.05 : -0.05;
+        setUiZoom((prev) => {
+          const clamped = Math.min(2.0, Math.max(0.5, Math.round((prev + delta) * 100) / 100));
+          try {
+            localStorage.setItem('wa_rust_ui_zoom', String(clamped));
+          } catch {}
+          return clamped;
+        });
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
+          e.preventDefault();
+          setUiZoom((prev) => {
+            const clamped = Math.min(2.0, Math.max(0.5, Math.round((prev + 0.1) * 100) / 100));
+            try {
+              localStorage.setItem('wa_rust_ui_zoom', String(clamped));
+            } catch {}
+            return clamped;
+          });
+        } else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') {
+          e.preventDefault();
+          setUiZoom((prev) => {
+            const clamped = Math.min(2.0, Math.max(0.5, Math.round((prev - 0.1) * 100) / 100));
+            try {
+              localStorage.setItem('wa_rust_ui_zoom', String(clamped));
+            } catch {}
+            return clamped;
+          });
+        } else if (e.key === '0' || e.code === 'Numpad0') {
+          e.preventDefault();
+          setUiZoom(1.0);
+          try {
+            localStorage.setItem('wa_rust_ui_zoom', '1.0');
+          } catch {}
+        }
+      }
+    };
+
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener('wheel', onWheel, { capture: true });
+      window.removeEventListener('keydown', onKeyDown, { capture: true });
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--wa-ui-zoom', String(uiZoom));
+  }, [uiZoom]);
+
   const selectedRustFile = useMemo(
     () =>
       rustFiles.find((f) => f.path === selectedFilePath) ||
@@ -650,7 +726,7 @@ export default function App() {
             height="16"
             className="text-[#00A884] fill-current"
           >
-            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.448 5.601-1.47c1.909 1.044 4.095 1.639 6.425 1.639 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.492 5.448 5.601-1.47c1.909 1.044 4.095 1.639 6.425 1.639 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
           </svg>
           <span className="text-xs font-medium text-[#E9EDEF] whitespace-nowrap">
             WhatsApp
@@ -693,8 +769,31 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Zone 3: Windows Native Caption Controls */}
+        {/* Zone 3: Zoom Indicator & Windows Native Caption Controls */}
         <div className="flex items-center gap-1 shrink-0">
+          <div
+            title="Ctrl + Scroll atau klik untuk atur Zoom"
+            className="hidden sm:flex items-center gap-1 mr-1.5 px-1.5 py-0.5 rounded bg-[#111B21] border border-[#2A3942] text-[11px] font-mono tabular-nums text-[#8696A0]"
+          >
+            <button
+              onClick={() => applyUiZoom(uiZoom - 0.1)}
+              className="px-1 hover:text-[#E9EDEF] cursor-pointer"
+            >
+              −
+            </button>
+            <button
+              onClick={() => applyUiZoom(1.0)}
+              className="px-1 text-[#00A884] font-semibold hover:underline cursor-pointer"
+            >
+              {Math.round(uiZoom * 100)}%
+            </button>
+            <button
+              onClick={() => applyUiZoom(uiZoom + 0.1)}
+              className="px-1 hover:text-[#E9EDEF] cursor-pointer"
+            >
+              +
+            </button>
+          </div>
           <button
             onClick={handleDownloadExeBundle}
             className="px-2.5 py-0.5 mr-2 text-[11px] font-medium bg-[#00A884] text-[#111B21] rounded hover:bg-[#06cf9c] transition-colors whitespace-nowrap cursor-pointer"
@@ -741,7 +840,7 @@ export default function App() {
       )}
 
       {/* Authentic WhatsApp 3-Column Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden wa-zoom-viewport">
         {/* 1. LEFTMOST VERTICAL NAVIGATION RAIL (60px, #202C33) */}
         <aside className="w-[60px] bg-[#202C33] border-r border-[#2A3942] flex flex-col items-center justify-between py-3 shrink-0 z-20">
           {/* Top Navigation Icons */}
@@ -2393,23 +2492,42 @@ export default function App() {
                 {/* GitHub Releases (v1.0.0) Pipeline & Assets Card */}
                 <div className="bg-[#111B21] border border-[#2A3942] rounded-xl p-6 space-y-5">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2A3942] pb-4">
-                    <div>
-                      <h2 className="text-base font-medium text-[#E9EDEF]">
-                        GitHub Releases — Otomatisasi Build &amp; Publish ({rustConfig.binaryName})
-                      </h2>
-                      <p className="text-xs text-[#8696A0] mt-0.5">
-                        Pipeline <code className="text-[#00A884]">.github/workflows/release-exe.yml</code> mengompilasi binary di <code className="text-[#E9EDEF]">windows-latest</code> dan menerbitkannya langsung ke tab <strong>Releases</strong> di GitHub.
-                      </p>
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src="/assets/aistudio/logo-wa_08966560.png"
+                        alt="App Icon"
+                        referrerPolicy="no-referrer"
+                        className="w-12 h-12 object-contain rounded-xl bg-[#0B141A] p-1 border border-[#2A3942]"
+                      />
+                      <div>
+                        <h2 className="text-base font-medium text-[#E9EDEF]">
+                          Installer Setup (`WhatsApp-Rust-Setup.exe`) &amp; Icon Aplikasi
+                        </h2>
+                        <p className="text-xs text-[#8696A0] mt-0.5">
+                          Logo Anda telah dikonversi ke <code className="text-[#00A884]">assets/icon.ico</code> (256x256..16x16) dan dibundel ke dalam <strong>NSIS Setup Wizard</strong> agar pengguna bebas memilih folder/drive penyimpanan.
+                        </p>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setSelectedFilePath('.github/workflows/release-exe.yml');
-                        setRailMode('source-code');
-                      }}
-                      className="px-3 py-1.5 text-xs font-medium bg-[#202C33] hover:bg-[#2A3942] text-[#00A884] rounded-lg border border-[#2A3942] cursor-pointer"
-                    >
-                      Lihat File release-exe.yml
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedFilePath('installer.nsi');
+                          setRailMode('source-code');
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium bg-[#202C33] hover:bg-[#2A3942] text-[#00A884] rounded-lg border border-[#2A3942] cursor-pointer"
+                      >
+                        Lihat installer.nsi
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedFilePath('.github/workflows/release-exe.yml');
+                          setRailMode('source-code');
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium bg-[#202C33] hover:bg-[#2A3942] text-[#E9EDEF] rounded-lg border border-[#2A3942] cursor-pointer"
+                      >
+                        Lihat release-exe.yml
+                      </button>
+                    </div>
                   </div>
 
                   {/* Release Assets Preview */}
@@ -2419,12 +2537,21 @@ export default function App() {
                     </div>
                     <div className="divide-y divide-[#2A3942] rounded-lg border border-[#2A3942] bg-[#0B141A] overflow-hidden text-xs">
                       <div className="px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5 font-mono text-[#00A884] font-semibold">
+                          <Download className="w-4 h-4 text-[#00A884]" />
+                          <span>WhatsApp-Rust-Setup.exe</span>
+                        </div>
+                        <span className="font-mono text-[#E9EDEF]">
+                          Installer Wizard (Pilih Folder Penyimpanan + Shortcut Desktop + Uninstaller)
+                        </span>
+                      </div>
+                      <div className="px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2.5 font-mono text-[#E9EDEF]">
                           <FileCode className="w-4 h-4 text-[#00A884]" />
                           <span>{rustConfig.binaryName}</span>
                         </div>
                         <span className="font-mono text-[#8696A0]">
-                          ~{buildMetrics.binaryMb} MB · Windows x64 Standalone Executable
+                          Versi Portable Standalone (Dengan Icon WhatsApp Kustom)
                         </span>
                       </div>
                       <div className="px-4 py-3 flex items-center justify-between">
@@ -2433,13 +2560,13 @@ export default function App() {
                           <span>whatsapp-rust-win64-portable.zip</span>
                         </div>
                         <span className="font-mono text-[#8696A0]">
-                          ZIP Portable ({rustConfig.binaryName} + README.md + SHA256)
+                          ZIP Portable ({rustConfig.binaryName} + icon.ico + README.md)
                         </span>
                       </div>
                       <div className="px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2.5 font-mono text-[#E9EDEF]">
                           <ShieldCheck className="w-4 h-4 text-[#00A884]" />
-                          <span>{rustConfig.binaryName}.sha256</span>
+                          <span>SHA256SUMS.txt</span>
                         </div>
                         <span className="font-mono text-[#8696A0]">
                           Checksum Verifikasi SHA-256

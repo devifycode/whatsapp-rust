@@ -1,4 +1,4 @@
-name: Build & Publish Windows .exe to GitHub Releases
+name: Build & Publish Windows Installer & .exe to GitHub Releases
 
 on:
   push:
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   release-windows-exe:
-    name: Build & Release whatsapp-rust.exe (WhatsApp Web Rust Wrapper)
+    name: Build WhatsApp-Rust-Setup.exe & Portable .exe
     runs-on: windows-latest
 
     steps:
@@ -34,56 +34,70 @@ jobs:
       - name: Cache Cargo Build Artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Compile Standalone whatsapp-rust.exe (WhatsApp Web Wrapper)
+      - name: Compile Standalone whatsapp-rust.exe (With Custom Icon)
         run: cargo build --release --target x86_64-pc-windows-msvc
 
-      - name: Package Portable .exe, ZIP & SHA-256 Checksum
+      - name: Build Windows Installer (WhatsApp-Rust-Setup.exe via NSIS)
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist-release | Out-Null
           $exePath = "target/x86_64-pc-windows-msvc/release/whatsapp-rust.exe"
           Copy-Item $exePath "dist-release/whatsapp-rust.exe"
+          Copy-Item "assets/icon.ico" "dist-release/icon.ico"
           Copy-Item "README.md" "dist-release/README.md"
 
-          # Generate SHA256 Checksum
-          $hash = (Get-FileHash "dist-release/whatsapp-rust.exe" -Algorithm SHA256).Hash.ToLower()
-          "$hash  whatsapp-rust.exe" | Out-File -FilePath "dist-release/whatsapp-rust.exe.sha256" -Encoding utf8
+          # Compile NSIS Installer (WhatsApp-Rust-Setup.exe) with Directory Picker
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (Test-Path $makensis) {
+            & $makensis installer.nsi
+          } else {
+            makensis installer.nsi
+          }
+
+          # Generate SHA256 Checksums
+          $hashSetup = (Get-FileHash "dist-release/WhatsApp-Rust-Setup.exe" -Algorithm SHA256).Hash.ToLower()
+          $hashExe = (Get-FileHash "dist-release/whatsapp-rust.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hashSetup  WhatsApp-Rust-Setup.exe`n$hashExe  whatsapp-rust.exe" | Out-File -FilePath "dist-release/SHA256SUMS.txt" -Encoding utf8
 
           # Create Portable ZIP Archive
-          Compress-Archive -Path "dist-release/whatsapp-rust.exe", "dist-release/README.md", "dist-release/whatsapp-rust.exe.sha256" -DestinationPath "dist-release/whatsapp-rust-win64-portable.zip" -Force
+          Compress-Archive -Path "dist-release/whatsapp-rust.exe", "dist-release/icon.ico", "dist-release/README.md", "dist-release/SHA256SUMS.txt" -DestinationPath "dist-release/whatsapp-rust-win64-portable.zip" -Force
 
           Write-Host "=== Artefak GitHub Release Siap ==="
           Get-ChildItem dist-release
 
-      - name: Upload Build Artifact to Actions Tab
+      - name: Upload Build Artifacts to Actions Tab
         uses: actions/upload-artifact@v4
         with:
-          name: whatsapp-rust-win64-exe
+          name: whatsapp-rust-win64-installer-and-exe
           path: |
+            dist-release/WhatsApp-Rust-Setup.exe
             dist-release/whatsapp-rust.exe
             dist-release/whatsapp-rust-win64-portable.zip
-            dist-release/whatsapp-rust.exe.sha256
+            dist-release/SHA256SUMS.txt
           if-no-files-found: error
 
-      - name: Publish Binary to GitHub Releases
+      - name: Publish Installer & Binary to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}
-          name: "WhatsApp Web Rust Wrapper (${{ github.event.inputs.release_tag || 'v1.0.0' }}) — Windows 64-bit (.exe)"
+          name: "WhatsApp Web Rust (${{ github.event.inputs.release_tag || 'v1.0.0' }}) — Setup Installer & Portable (.exe)"
           body: |
-            ## WhatsApp Web Rust Wrapper — Standalone Windows 64-bit (`.exe`)
-            Aplikasi `.exe` ringan berbasis **Rust (`tao` + `wry` OS WebView2)** yang membuka langsung **`https://web.whatsapp.com`** secara penuh tanpa perlu membuka browser atau menginstal aplikasi Electron yang berat.
+            ## WhatsApp Web Rust — Windows Setup Installer & Portable (`.exe`)
+            Aplikasi desktop ringan berbasis **Rust (`tao` + `wry` OS WebView2)** yang membuka langsung **`https://web.whatsapp.com`** dengan ikon WhatsApp resmi dan pengaturan lokasi penyimpanan.
 
-            ### Fitur Utama `whatsapp-rust.exe`:
-            - **100% WhatsApp Web Asli (`https://web.whatsapp.com`)**: Semua fitur resmi WhatsApp Web (QR Login, Chat, Voice Note, Stiker, Grup, Saluran) berjalan persis seperti aslinya.
-            - **Sesi Login Tersimpan Permanen**: Data login disimpan otomatis di `%LOCALAPPDATA%\WhatsAppRust\webview2-profile` sehingga cukup scan QR satu kali saja.
-            - **Tampilan Full-Window (Tanpa Margin Browser)**: Menginjeksi CSS ringan agar tampilan WhatsApp Web memenuhi 100% ukuran jendela aplikasi `.exe`.
-            - **Ukuran File `.exe` Ekstra Kecil (`~1.8 MB`)**: Menggunakan engine WebView2 bawaan Windows 10/11 tanpa membundel ratusan MB file Chromium.
+            ### Pilihan File Unduhan:
+            1. **`WhatsApp-Rust-Setup.exe` (Direkomendasikan — Installer Wizard)**:
+               - Dilengkapi **Pemilih Lokasi Penyimpanan (`Browse...`)** untuk memilih drive/folder instalasi (misal `C:\...`, `D:\WhatsAppRust`, dll.).
+               - Seluruh data sesi login WhatsApp Web & cache otomatis disimpan di folder yang Anda pilih (`<FolderPilihan>\webview2-profile`) sehingga tidak memenuhi drive C.
+               - Otomatis membuat shortcut **WhatsApp** di Desktop & Start Menu lengkap dengan ikon WhatsApp serta fitur Uninstall.
+            2. **`whatsapp-rust.exe` (Versi Portable)**:
+               - Langsung klik dua kali tanpa instalasi; menyimpan data sesi secara lokal di folder yang sama (`./webview2-profile`).
           draft: false
           prerelease: false
           files: |
+            dist-release/WhatsApp-Rust-Setup.exe
             dist-release/whatsapp-rust.exe
             dist-release/whatsapp-rust-win64-portable.zip
-            dist-release/whatsapp-rust.exe.sha256
+            dist-release/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

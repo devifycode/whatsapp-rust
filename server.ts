@@ -281,10 +281,11 @@ let conversations: ConversationThread[] = [
 
 const RUST_REPO_FILES = [
   { path: 'Cargo.toml', label: 'Cargo.toml', description: 'Manifes crate Rust (tao + wry WebView2 wrapper untuk https://web.whatsapp.com)' },
-  { path: 'build.rs', label: 'build.rs', description: 'Kompilator resource Windows (winres) & DPI manifest' },
-  { path: 'src-rust/main.rs', label: 'src-rust/main.rs', description: 'Entry point .exe yang membungkus https://web.whatsapp.com di WebView2' },
-  { path: 'src-rust/inject.js', label: 'src-rust/inject.js', description: 'Script injeksi agar WhatsApp Web full-window 100% tanpa margin' },
-  { path: '.github/workflows/release-exe.yml', label: '.github/workflows/release-exe.yml', description: 'GitHub Actions: Otomatis build & publish whatsapp-rust.exe ke GitHub Releases' },
+  { path: 'build.rs', label: 'build.rs', description: 'Kompilator resource Windows (winres) yang menyematkan assets/icon.ico' },
+  { path: 'src-rust/main.rs', label: 'src-rust/main.rs', description: 'Entry point .exe dengan ikon kustom, lokasi penyimpanan & IPC native WebView2 zoom' },
+  { path: 'src-rust/inject.js', label: 'src-rust/inject.js', description: 'Script injeksi full-window 100% + Auto Zoom In/Out (Ctrl+Scroll, Ctrl+Plus/Minus, Ctrl+0)' },
+  { path: 'installer.nsi', label: 'installer.nsi', description: 'Script NSIS Windows Installer (WhatsApp-Rust-Setup.exe) dengan pemilih folder penyimpanan' },
+  { path: '.github/workflows/release-exe.yml', label: '.github/workflows/release-exe.yml', description: 'GitHub Actions: Build WhatsApp-Rust-Setup.exe & portable .exe ke GitHub Releases' },
   { path: 'build-exe.bat', label: 'build-exe.bat', description: 'Script 1-klik kompilasi .exe di Windows' },
 ];
 

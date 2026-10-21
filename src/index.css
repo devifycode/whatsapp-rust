@@ -25,6 +25,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.wa-zoom-viewport {
+  zoom: var(--wa-ui-zoom, 1);
+}
+
 /* Authentic WhatsApp Dark Doodle Wallpaper Pattern */
 .wa-chat-wallpaper {
   background-color: #0B141A;

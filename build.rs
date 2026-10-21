@@ -1,15 +1,18 @@
-// build.rs — Windows Resource & Manifest Compiler for whatsapp-rust.exe
-// Embeds native Windows application metadata, Per-Monitor V2 DPI Awareness,
-// and ensures zero console window flash on startup.
+// build.rs — Windows Resource & Icon Compiler for whatsapp-rust.exe
+// Embeds the custom WhatsApp logo (assets/icon.ico), application metadata,
+// and Per-Monitor V2 DPI Awareness into the .exe binary.
 
 fn main() {
+    println!("cargo:rerun-if-changed=assets/icon.ico");
+
     #[cfg(target_os = "windows")]
     {
         let mut res = winres::WindowsResource::new();
-        res.set("ProductName", "WhatsApp Native Rust");
+        res.set_icon("assets/icon.ico");
+        res.set("ProductName", "WhatsApp");
         res.set(
             "FileDescription",
-            "WhatsApp Native Rust — Lightweight Desktop Client",
+            "WhatsApp Desktop (Rust WebView2 Wrapper)",
         );
         res.set("OriginalFilename", "whatsapp-rust.exe");
         res.set("CompanyName", "WhatsApp Rust Open Source");
@@ -33,6 +36,6 @@ fn main() {
 </assembly>
 "#,
         );
-        let _ = res.compile();
+        res.compile().expect("Failed to compile Windows .exe icon and manifest resources");
     }
 }
