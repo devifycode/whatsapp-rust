@@ -37,21 +37,156 @@ jobs:
       - name: Compile Standalone whatsapp-rust.exe (With Custom Icon)
         run: cargo build --release --target x86_64-pc-windows-msvc
 
-      - name: Build Windows Installer (WhatsApp-Rust-Setup.exe via NSIS)
+      - name: Ensure NSIS is Installed & Build WhatsApp-Rust-Setup.exe
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist-release | Out-Null
           $exePath = "target/x86_64-pc-windows-msvc/release/whatsapp-rust.exe"
-          Copy-Item $exePath "dist-release/whatsapp-rust.exe"
-          Copy-Item "assets/icon.ico" "dist-release/icon.ico"
-          Copy-Item "README.md" "dist-release/README.md"
+          Copy-Item $exePath "dist-release/whatsapp-rust.exe" -Force
+          Copy-Item "assets/icon.ico" "dist-release/icon.ico" -Force
+          Copy-Item "README.md" "dist-release/README.md" -Force
 
-          # Compile NSIS Installer (WhatsApp-Rust-Setup.exe) with Directory Picker
-          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
-          if (Test-Path $makensis) {
+          # Locate or install NSIS (makensis.exe) on windows-latest runner
+          $makensisCandidates = @(
+            "C:\Program Files (x86)\NSIS\makensis.exe",
+            "C:\Program Files\NSIS\makensis.exe",
+            "C:\ProgramData\chocolatey\bin\makensis.exe"
+          )
+          $makensis = $makensisCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+          if (-not $makensis) {
+            Write-Host "Installing NSIS via Chocolatey..."
+            choco install nsis -y --no-progress
+            $makensis = $makensisCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+
+          if ($makensis) {
+            Write-Host "Building WhatsApp-Rust-Setup.exe using NSIS ($makensis)..."
             & $makensis installer.nsi
-          } else {
-            makensis installer.nsi
+          }
+
+          # Fallback: If makensis was unavailable, compile a native Windows GUI Installer .exe via built-in .NET csc.exe
+          if (!(Test-Path "dist-release/WhatsApp-Rust-Setup.exe")) {
+            Write-Host "Compiling native Windows GUI Setup Installer via built-in .NET compiler..."
+            $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+            $csCode = @"
+using System;
+using System.IO;
+using System.Reflection;
+using System.Diagnostics;
+using System.Drawing;
+using System.Windows.Forms;
+
+class SetupProgram {
+    [STAThread]
+    static void Main() {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        Form form = new Form();
+        form.Text = "WhatsApp (Rust Lightweight) — Setup Installer";
+        form.Size = new Size(520, 290);
+        form.StartPosition = FormStartPosition.CenterScreen;
+        form.FormBorderStyle = FormBorderStyle.FixedDialog;
+        form.MaximizeBox = false;
+        form.BackColor = Color.FromArgb(17, 27, 33);
+        form.ForeColor = Color.FromArgb(233, 237, 239);
+
+        Label title = new Label();
+        title.Text = "Instalasi WhatsApp (Rust WebView2)";
+        title.Font = new Font("Segoe UI", 13, FontStyle.Bold);
+        title.ForeColor = Color.FromArgb(0, 168, 132);
+        title.Location = new Point(22, 18);
+        title.AutoSize = true;
+
+        Label desc = new Label();
+        desc.Text = "Pilih folder lokasi penyimpanan untuk aplikasi WhatsApp beserta data sesi & cache WebView2 Anda:";
+        desc.Font = new Font("Segoe UI", 9);
+        desc.Location = new Point(22, 52);
+        desc.Size = new Size(465, 36);
+
+        TextBox pathBox = new TextBox();
+        string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "WhatsAppRust");
+        pathBox.Text = defaultDir;
+        pathBox.Font = new Font("Segoe UI", 9);
+        pathBox.Location = new Point(22, 96);
+        pathBox.Size = new Size(365, 26);
+
+        Button browseBtn = new Button();
+        browseBtn.Text = "Browse...";
+        browseBtn.FlatStyle = FlatStyle.Flat;
+        browseBtn.BackColor = Color.FromArgb(32, 44, 51);
+        browseBtn.Location = new Point(395, 94);
+        browseBtn.Size = new Size(90, 28);
+        browseBtn.Click += (s, e) => {
+            using (FolderBrowserDialog fbd = new FolderBrowserDialog()) {
+                fbd.Description = "Pilih folder penyimpanan WhatsApp (Rust):";
+                fbd.SelectedPath = pathBox.Text;
+                if (fbd.ShowDialog() == DialogResult.OK) {
+                    pathBox.Text = Path.Combine(fbd.SelectedPath, "WhatsAppRust");
+                }
+            }
+        };
+
+        CheckBox launchChk = new CheckBox();
+        launchChk.Text = "Jalankan WhatsApp setelah instalasi selesai";
+        launchChk.Checked = true;
+        launchChk.AutoSize = true;
+        launchChk.Location = new Point(22, 140);
+
+        Button installBtn = new Button();
+        installBtn.Text = "Install Sekarang";
+        installBtn.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+        installBtn.FlatStyle = FlatStyle.Flat;
+        installBtn.BackColor = Color.FromArgb(0, 168, 132);
+        installBtn.ForeColor = Color.FromArgb(17, 27, 33);
+        installBtn.Location = new Point(335, 195);
+        installBtn.Size = new Size(150, 36);
+
+        installBtn.Click += (s, e) => {
+            try {
+                string targetDir = pathBox.Text.Trim();
+                string profileDir = Path.Combine(targetDir, "webview2-profile");
+                Directory.CreateDirectory(targetDir);
+                Directory.CreateDirectory(profileDir);
+
+                Assembly asm = Assembly.GetExecutingAssembly();
+                string exeOut = Path.Combine(targetDir, "whatsapp-rust.exe");
+                using (Stream st = asm.GetManifestResourceStream("whatsapp-rust.exe"))
+                using (FileStream fs = new FileStream(exeOut, FileMode.Create, FileAccess.Write)) {
+                    st.CopyTo(fs);
+                }
+
+                string icoOut = Path.Combine(targetDir, "icon.ico");
+                using (Stream st = asm.GetManifestResourceStream("icon.ico"))
+                using (FileStream fs = new FileStream(icoOut, FileMode.Create, FileAccess.Write)) {
+                    st.CopyTo(fs);
+                }
+
+                File.WriteAllText(Path.Combine(targetDir, "storage-location.txt"), profileDir);
+                MessageBox.Show("WhatsApp berhasil diinstal di:\n" + targetDir, "Instalasi Selesai", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (launchChk.Checked) {
+                    Process.Start(exeOut);
+                }
+                form.Close();
+            } catch (Exception ex) {
+                MessageBox.Show("Gagal menginstal: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        };
+
+        form.Controls.Add(title);
+        form.Controls.Add(desc);
+        form.Controls.Add(pathBox);
+        form.Controls.Add(browseBtn);
+        form.Controls.Add(launchChk);
+        form.Controls.Add(installBtn);
+        Application.Run(form);
+    }
+}
+"@
+            Set-Content -Path "dist-release/SetupWizard.cs" -Value $csCode -Encoding UTF8
+            & $csc /target:winexe /out:"dist-release\WhatsApp-Rust-Setup.exe" /win32icon:"assets\icon.ico" /resource:"dist-release\whatsapp-rust.exe,whatsapp-rust.exe" /resource:"assets\icon.ico,icon.ico" "dist-release\SetupWizard.cs"
+            Remove-Item "dist-release/SetupWizard.cs" -ErrorAction SilentlyContinue
           }
 
           # Generate SHA256 Checksums
@@ -83,7 +218,7 @@ jobs:
           name: "WhatsApp Web Rust (${{ github.event.inputs.release_tag || 'v1.0.0' }}) — Setup Installer & Portable (.exe)"
           body: |
             ## WhatsApp Web Rust — Windows Setup Installer & Portable (`.exe`)
-            Aplikasi desktop ringan berbasis **Rust (`tao` + `wry` OS WebView2)** yang membuka langsung **`https://web.whatsapp.com`** dengan ikon WhatsApp resmi dan pengaturan lokasi penyimpanan.
+            Aplikasi desktop ringan berbasis **Rust (`tao` + `wry` OS WebView2)** yang membuka langsung **`https://web.whatsapp.com`** dengan ikon WhatsApp resmi, fitur **Auto Zoom In/Out (`Ctrl + Scroll`)**, dan pengaturan lokasi penyimpanan.
 
             ### Pilihan File Unduhan:
             1. **`WhatsApp-Rust-Setup.exe` (Direkomendasikan — Installer Wizard)**:

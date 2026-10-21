@@ -22,32 +22,33 @@ RequestExecutionLevel user
 !define MUI_UNICON "assets\icon.ico"
 !define MUI_ABORTWARNING
 
-; Directory Selection Page Customization (Bahasa Indonesia / English)
-!define MUI_DIRECTORYPAGE_TEXT_TOP "Pilih folder lokasi penyimpanan untuk menginstal aplikasi WhatsApp (Rust) beserta data sesi & cache WebView2 Anda. Klik Browse untuk memilih drive atau folder lain."
+; Welcome Page
+!insertmacro MUI_PAGE_WELCOME
+
+; Directory Selection Page Customization (User chooses where to store app & WebView2 data)
+!define MUI_DIRECTORYPAGE_TEXT_TOP "Pilih folder lokasi penyimpanan untuk menginstal aplikasi WhatsApp (Rust) beserta data sesi & cache WebView2 Anda. Klik Browse untuk memilih drive atau folder lain (misal D:\WhatsAppRust)."
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "Folder Penyimpanan Aplikasi & Data WhatsApp:"
+!insertmacro MUI_PAGE_DIRECTORY
+
+; Installation Progress Page
+!insertmacro MUI_PAGE_INSTFILES
 
 ; Finish Page — Launch App Checkbox
 !define MUI_FINISHPAGE_RUN "$INSTDIR\whatsapp-rust.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Jalankan WhatsApp sekarang"
-
-; Wizard Pages
-!insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_DIRECTORY
-!insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller Pages
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
-!insertmacro MUI_LANGUAGE "Indonesian"
 !insertmacro MUI_LANGUAGE "English"
 
 Section "WhatsApp Rust Core" SecMain
   SetOutPath "$INSTDIR"
 
   ; Copy compiled binary, custom icon, and documentation
-  File "target\x86_64-pc-windows-msvc\release\whatsapp-rust.exe"
+  File "dist-release\whatsapp-rust.exe"
   File "assets\icon.ico"
   File "README.md"
 
