@@ -1,0 +1,5 @@
+{
+  "name": "WhatsApp Native Rust (.exe) Studio",
+  "description": "Ultra-lightweight native WhatsApp client built in Rust for Windows (.exe) with live real-time messaging preview, multi-device QR pairing, and custom .exe binary builder.",
+  "requestFramePermissions": []
+}

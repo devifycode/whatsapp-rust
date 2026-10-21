@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Segoe UI', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'Segoe UI', 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #0B141A;
+    color: #E9EDEF;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Authentic WhatsApp Dark Doodle Wallpaper Pattern */
+.wa-chat-wallpaper {
+  background-color: #0B141A;
+  background-image: radial-gradient(#202C33 1px, transparent 1px),
+    radial-gradient(#182229 1px, #0B141A 1px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+}
+
+/* Subtle custom dark scrollbars matching WhatsApp Desktop */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(134, 150, 160, 0.28);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(134, 150, 160, 0.45);
+}
