@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   release-windows-exe:
-    name: Build & Release whatsapp-rust.exe (Windows x64)
+    name: Build & Release whatsapp-rust.exe (WhatsApp Web Rust Wrapper)
     runs-on: windows-latest
 
     steps:
@@ -34,10 +34,7 @@ jobs:
       - name: Cache Cargo Build Artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Compile Optimized Standalone whatsapp-rust.exe
-        env:
-          RUST_TARGET_TRIPLE: x86_64-pc-windows-msvc
-          RUST_RAM_LIMIT_MB: 32
+      - name: Compile Standalone whatsapp-rust.exe (WhatsApp Web Wrapper)
         run: cargo build --release --target x86_64-pc-windows-msvc
 
       - name: Package Portable .exe, ZIP & SHA-256 Checksum
@@ -72,16 +69,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || 'v1.0.0' }}
-          name: "WhatsApp Native Rust (${{ github.event.inputs.release_tag || 'v1.0.0' }}) — Windows 64-bit (.exe)"
+          name: "WhatsApp Web Rust Wrapper (${{ github.event.inputs.release_tag || 'v1.0.0' }}) — Windows 64-bit (.exe)"
           body: |
-            ## WhatsApp Native Rust — Standalone Windows 64-bit (`.exe`)
-            Aplikasi desktop WhatsApp Native ekstra ringan berbasis **Rust (`eframe`/`egui` + `tokio`)** untuk Windows 10/11.
+            ## WhatsApp Web Rust Wrapper — Standalone Windows 64-bit (`.exe`)
+            Aplikasi `.exe` ringan berbasis **Rust (`tao` + `wry` OS WebView2)** yang membuka langsung **`https://web.whatsapp.com`** secara penuh tanpa perlu membuka browser atau menginstal aplikasi Electron yang berat.
 
-            ### Spesifikasi Binary Release:
-            - **File Aplikasi**: `whatsapp-rust.exe` (Langsung klik dua kali tanpa instalasi rumit)
-            - **Target Kompilasi**: `x86_64-pc-windows-msvc` (`opt-level = "z"`, `lto = true`, `strip = true`)
-            - **Batas Memori (RAM)**: `< 32 MB` (`~24.2 MB` pemakaian aktif vs `648 MB` pada klien Electron)
-            - **Fitur Native**: Multi-Device QR Pairing (`Noise_XX_25519_AESGCM_SHA256`), System Tray Windows, Tanpa Jendela CMD (`windows_subsystem = "windows"`).
+            ### Fitur Utama `whatsapp-rust.exe`:
+            - **100% WhatsApp Web Asli (`https://web.whatsapp.com`)**: Semua fitur resmi WhatsApp Web (QR Login, Chat, Voice Note, Stiker, Grup, Saluran) berjalan persis seperti aslinya.
+            - **Sesi Login Tersimpan Permanen**: Data login disimpan otomatis di `%LOCALAPPDATA%\WhatsAppRust\webview2-profile` sehingga cukup scan QR satu kali saja.
+            - **Tampilan Full-Window (Tanpa Margin Browser)**: Menginjeksi CSS ringan agar tampilan WhatsApp Web memenuhi 100% ukuran jendela aplikasi `.exe`.
+            - **Ukuran File `.exe` Ekstra Kecil (`~1.8 MB`)**: Menggunakan engine WebView2 bawaan Windows 10/11 tanpa membundel ratusan MB file Chromium.
           draft: false
           prerelease: false
           files: |

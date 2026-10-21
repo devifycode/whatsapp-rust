@@ -280,12 +280,10 @@ let conversations: ConversationThread[] = [
 ];
 
 const RUST_REPO_FILES = [
-  { path: 'Cargo.toml', label: 'Cargo.toml', description: 'Manifes crate Rust & profil optimasi ukuran .exe' },
+  { path: 'Cargo.toml', label: 'Cargo.toml', description: 'Manifes crate Rust (tao + wry WebView2 wrapper untuk https://web.whatsapp.com)' },
   { path: 'build.rs', label: 'build.rs', description: 'Kompilator resource Windows (winres) & DPI manifest' },
-  { path: 'src-rust/main.rs', label: 'src-rust/main.rs', description: 'Entry point native .exe & inisialisasi Tokio' },
-  { path: 'src-rust/protocol.rs', label: 'src-rust/protocol.rs', description: 'Mesin protokol WhatsApp Multi-Device Noise/Signal' },
-  { path: 'src-rust/ui.rs', label: 'src-rust/ui.rs', description: 'Antarmuka GUI native egui/eframe (< 28 MB RAM)' },
-  { path: 'src-rust/tray.rs', label: 'src-rust/tray.rs', description: 'Kontroler System Tray & notifikasi Windows Toast' },
+  { path: 'src-rust/main.rs', label: 'src-rust/main.rs', description: 'Entry point .exe yang membungkus https://web.whatsapp.com di WebView2' },
+  { path: 'src-rust/inject.js', label: 'src-rust/inject.js', description: 'Script injeksi agar WhatsApp Web full-window 100% tanpa margin' },
   { path: '.github/workflows/release-exe.yml', label: '.github/workflows/release-exe.yml', description: 'GitHub Actions: Otomatis build & publish whatsapp-rust.exe ke GitHub Releases' },
   { path: 'build-exe.bat', label: 'build-exe.bat', description: 'Script 1-klik kompilasi .exe di Windows' },
 ];
@@ -295,8 +293,8 @@ function syncCargoTomlToDisk(cfg: RustExeConfig) {
 name = "${cfg.binaryName.replace(/\\.exe$/i, '')}"
 version = "1.0.0"
 edition = "2021"
-authors = ["WhatsApp Native Rust Contributors"]
-description = "Ultra-lightweight Native WhatsApp Desktop Client (.exe) built in Rust (< ${cfg.ramLimitMb} MB RAM)"
+authors = ["WhatsApp Rust Contributors"]
+description = "Ultra-lightweight Rust Native Wrapper (.exe) for WhatsApp Web (https://web.whatsapp.com) using OS WebView2"
 license = "MIT"
 build = "build.rs"
 
@@ -305,27 +303,8 @@ name = "${cfg.binaryName.replace(/\\.exe$/i, '')}"
 path = "src-rust/main.rs"
 
 [dependencies]
-eframe = { version = "0.29", default-features = false, features = ["default_fonts", "glow", "persistence"] }
-egui = "0.29"
-wry = { version = "0.47", optional = true }
-tao = { version = "0.30", optional = true }
-tokio = { version = "1.41", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
-tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
-futures-util = "0.3"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sha2 = "0.10"
-aes-gcm = "0.10"
-x25519-dalek = { version = "2.0", features = ["static_secrets"] }
-base64 = "0.22"
-tray-icon = "0.19"
-notify-rust = "4.11"
-qrcode = "0.14"
-
-[features]
-default = ["${cfg.guiBackend === 'eframe-glow' ? 'native-egui' : 'webview2-hybrid'}"]
-native-egui = []
-webview2-hybrid = ["dep:wry", "dep:tao"]
+tao = "0.30"
+wry = "0.47"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"

@@ -1,97 +1,80 @@
 // Hide Windows command prompt window in release .exe builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod protocol;
-mod tray;
-mod ui;
+use std::env;
+use std::fs;
+use std::path::PathBuf;
+use tao::{
+    dpi::LogicalSize,
+    event::{Event, StartCause, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+use wry::{WebContext, WebViewBuilder};
 
-use std::sync::Arc;
-use tokio::sync::Mutex;
+/// Official WhatsApp Web URL
+const WHATSAPP_WEB_URL: &str = "https://web.whatsapp.com/";
 
-use crate::protocol::WhatsAppNoiseClient;
-use crate::tray::SystemTrayController;
-use crate::ui::WhatsAppNativeApp;
+/// Modern Desktop Chromium User-Agent required by WhatsApp Web
+const CHROME_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0";
 
-/// Runtime configuration for WhatsApp Native Rust (.exe)
-#[allow(dead_code)]
-#[derive(Clone, Debug)]
-pub struct NativeConfig {
-    pub app_title: String,
-    pub ram_limit_mb: usize,
-    pub minimize_to_tray: bool,
-    pub always_on_top: bool,
-    pub auto_start_windows: bool,
-    pub hardware_acceleration: bool,
+/// Returns persistent profile folder (%LOCALAPPDATA%\WhatsAppRust\webview2-profile)
+/// so WhatsApp Web QR login session stays logged in across restarts.
+fn get_persistent_profile_dir() -> PathBuf {
+    let base = env::var("LOCALAPPDATA")
+        .or_else(|_| env::var("APPDATA"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| env::temp_dir());
+
+    let profile_dir = base.join("WhatsAppRust").join("webview2-profile");
+    let _ = fs::create_dir_all(&profile_dir);
+    profile_dir
 }
 
-impl Default for NativeConfig {
-    fn default() -> Self {
-        Self {
-            app_title: String::from("WhatsApp Native Rust (x86_64-pc-windows-msvc)"),
-            ram_limit_mb: 32, // Recommended optimal working-set cap (32 MB)
-            minimize_to_tray: true,
-            always_on_top: false,
-            auto_start_windows: false,
-            hardware_acceleration: true,
+fn main() -> wry::Result<()> {
+    // Reduce WebView2 background memory footprint via Chromium flags
+    env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--disable-features=msSmartScreenProtection --enable-SmoothScrolling --js-flags=--max-old-space-size=256",
+    );
+
+    let event_loop = EventLoop::new();
+
+    let window = WindowBuilder::new()
+        .with_title("WhatsApp")
+        .with_inner_size(LogicalSize::new(1240.0, 820.0))
+        .with_min_inner_size(LogicalSize::new(780.0, 520.0))
+        .with_decorations(true)
+        .build(&event_loop)
+        .expect("Failed to create native Windows viewport");
+
+    // Persistent WebContext keeps IndexedDB, LocalStorage & WhatsApp QR session saved
+    let profile_dir = get_persistent_profile_dir();
+    let mut web_context = WebContext::new(Some(profile_dir));
+
+    let init_script = include_str!("inject.js");
+
+    let _webview = WebViewBuilder::new_with_web_context(&mut web_context)
+        .with_url(WHATSAPP_WEB_URL)
+        .with_user_agent(CHROME_USER_AGENT)
+        .with_initialization_script(init_script)
+        .with_devtools(cfg!(debug_assertions))
+        .with_clipboard(true)
+        .with_autoplay(true)
+        .build(&window)?;
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        match event {
+            Event::NewEvents(StartCause::Init) => {}
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                *control_flow = ControlFlow::Exit;
+            }
+            _ => {}
         }
-    }
-}
-
-fn main() -> eframe::Result<()> {
-    let config = NativeConfig::default();
-    let app_title = config.app_title.clone();
-
-    // Initialize multi-threaded async Tokio runtime with minimal worker footprint (2 threads)
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .thread_name("wa-rust-net")
-        .enable_all()
-        .build()
-        .expect("Failed to initialize Tokio runtime");
-
-    let _guard = rt.enter();
-
-    // Initialize WhatsApp Multi-Device Noise_XX_25519_AESGCM_SHA256 client state
-    let protocol_client = Arc::new(Mutex::new(WhatsAppNoiseClient::new()));
-
-    // Spawn background WebSocket keepalive & frame dispatcher
-    let protocol_clone = Arc::clone(&protocol_client);
-    rt.spawn(async move {
-        WhatsAppNoiseClient::run_keepalive_loop(protocol_clone).await;
     });
-
-    // Initialize Windows System Tray Controller
-    let tray_controller = SystemTrayController::initialize(&app_title);
-
-    // Configure ultra-lightweight native Windows viewport (eframe / glow OpenGL/DirectX backend)
-    let mut viewport = egui::ViewportBuilder::default()
-        .with_title(&app_title)
-        .with_inner_size([1180.0_f32, 760.0_f32])
-        .with_min_inner_size([840.0_f32, 540.0_f32])
-        .with_decorations(true);
-
-    if config.always_on_top {
-        viewport = viewport.with_always_on_top();
-    }
-
-    let native_options = eframe::NativeOptions {
-        viewport,
-        vsync: true,
-        multisampling: 2,
-        renderer: eframe::Renderer::Glow,
-        ..Default::default()
-    };
-
-    eframe::run_native(
-        &app_title,
-        native_options,
-        Box::new(move |cc| {
-            Ok(Box::new(WhatsAppNativeApp::new(
-                cc,
-                config,
-                protocol_client,
-                tray_controller,
-            )))
-        }),
-    )
 }

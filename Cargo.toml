@@ -2,8 +2,8 @@
 name = "whatsapp-rust"
 version = "1.0.0"
 edition = "2021"
-authors = ["WhatsApp Native Rust Contributors"]
-description = "Ultra-lightweight Native WhatsApp Desktop Client (.exe) built in Rust (< 32 MB RAM, x86_64-pc-windows-msvc)"
+authors = ["WhatsApp Rust Contributors"]
+description = "Ultra-lightweight Rust Native Wrapper (.exe) for WhatsApp Web (https://web.whatsapp.com) using OS WebView2"
 license = "MIT"
 build = "build.rs"
 
@@ -12,44 +12,17 @@ name = "whatsapp-rust"
 path = "src-rust/main.rs"
 
 [dependencies]
-# Native GPU-accelerated immediate mode GUI (< 28 MB RAM footprint)
-eframe = { version = "0.29", default-features = false, features = ["default_fonts", "glow", "persistence"] }
-egui = "0.29"
-
-# Lightweight OS-native WebView2 fallback mode (zero bundled Chromium)
-wry = { version = "0.47", optional = true }
-tao = { version = "0.30", optional = true }
-
-# Async networking & Multi-Device WebSocket Noise Frame Engine
-tokio = { version = "1.41", features = ["rt-multi-thread", "macros", "sync", "time", "net"] }
-tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
-futures-util = "0.3"
-
-# Serialization & Cryptography primitives (Signal / Noise_XX_25519_AESGCM_SHA256)
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sha2 = "0.10"
-aes-gcm = "0.10"
-x25519-dalek = { version = "2.0", features = ["static_secrets"] }
-base64 = "0.22"
-
-# Native Windows System Tray, Notifications & QR Code rendering
-tray-icon = "0.19"
-notify-rust = "4.11"
-qrcode = "0.14"
-
-[features]
-default = ["native-egui"]
-native-egui = []
-webview2-hybrid = ["dep:wry", "dep:tao"]
+# Native cross-platform windowing & OS WebView2 engine (Tauri core crates)
+tao = "0.30"
+wry = "0.47"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
 
-# Ultra-small, fast Windows .exe binary optimization profile
+# Ultra-small, fast Windows .exe binary optimization profile (~1.8 MB .exe)
 [profile.release]
-opt-level = "z"       # Optimize aggressively for binary size (< 8 MB .exe)
-lto = true            # Enable full Link-Time Optimization across crates
+opt-level = "z"       # Optimize aggressively for binary size
+lto = true            # Enable full Link-Time Optimization
 codegen-units = 1     # Maximize dead-code elimination
 panic = "abort"       # Strip unwinding tables for smaller footprint
 strip = true          # Automatically strip debug symbols from .exe

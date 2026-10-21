@@ -1,33 +1,18 @@
-# WhatsApp Native Rust (`whatsapp-rust.exe`)
+# WhatsApp Web Rust Wrapper (`whatsapp-rust.exe`)
 
-Aplikasi desktop **WhatsApp Native** super ringan berbasis **Rust** untuk Windows (`.exe`), dirancang untuk menggantikan wrapper berbasis Electron/Chromium yang memakan ratusan MB RAM. Dilengkapi juga dengan **Interactive Studio & Live WebSocket Preview** pada port `3000`.
+Aplikasi desktop Windows (`.exe`) ekstra ringan berbasis **Rust (`tao` + `wry` WebView2)** yang membungkus langsung **`https://web.whatsapp.com`**.
 
-## Keunggulan Arsitektur Rust Native
+## Mengapa Membungkus WhatsApp Web dengan Rust (`wry` + `tao`)?
 
-- **Pemakaian RAM Ekstra Ringan (`~24 MB – 35 MB`)**: Menggunakan immediate-mode GPU GUI (`eframe` / `egui` dengan backend OpenGL/Glow) atau mode hybrid OS WebView2 (`wry`) tanpa membundel Chromium.
-- **Ukuran Binary `.exe` Kecil (`~6.4 MB`)**: Dikompilasi dengan `opt-level = "z"`, Link-Time Optimization (`lto = true`), `panic = "abort"`, dan `strip = true`.
-- **Protokol Multi-Device & Tokio Async**: Mesin framing `Noise_XX_25519_AESGCM_SHA256` menggunakan runtime multi-thread `tokio` hemat CPU (2 worker threads).
-- **Tanpa Jendela CMD/Console (`windows_subsystem = "windows"`)**: Langsung membuka jendela aplikasi native Windows dengan dukungan System Tray, notifikasi Windows Toast, dan DPI Per-Monitor V2.
+- **100% Tampilan & Fitur WhatsApp Web Asli**: Membuka langsung `https://web.whatsapp.com/` menggunakan User-Agent Chromium Desktop terbaru, sehingga seluruh antarmuka, QR login, pesan suara, lampiran, dan enkripsi adalah WhatsApp Web resmi.
+- **Sesi Login Tersimpan Otomatis**: Menyimpan profil di `%LOCALAPPDATA%\WhatsAppRust\webview2-profile` sehingga Anda cukup memindai QR Code satu kali saja (tidak perlu login ulang setiap kali aplikasi `.exe` ditutup).
+- **Full-Window Tanpa Margin Kosong**: Script `src-rust/inject.js` otomatis menghapus bingkai/margin luar WhatsApp Web sehingga memenuhi 100% jendela aplikasi desktop `.exe`.
+- **Ukuran Binary `.exe` Sangat Kecil (`~1.8 MB`)**: Memanfaatkan komponen WebView2 bawaan Windows 10/11 tanpa membundel ratusan MB Chromium seperti Electron.
 
-## Struktur Kode Rust (`.exe`)
+## Struktur Proyek Rust (`.exe`)
 
-- `Cargo.toml` — Konfigurasi crate Rust, dependensi `eframe`/`egui`/`tokio`/`wry`, dan profil optimasi rilis `.exe`.
-- `build.rs` — Script kompilator resource Windows (`winres`) untuk menyematkan manifest DPI dan metadata `.exe`.
-- `src-rust/main.rs` — Entry point aplikasi desktop native Windows dan inisialisasi runtime async Tokio.
-- `src-rust/protocol.rs` — Implementasi sesi WhatsApp Multi-Device Noise/Signal dan pengelolaan frame pesan.
-- `src-rust/ui.rs` — Antarmuka grafis desktop native berbasis `egui` (Sidebar percakapan, ruang chat E2EE, dan QR pairing).
-- `src-rust/tray.rs` — Integrasi ikon System Tray Windows dan notifikasi desktop.
-- `build-exe.bat` — Script sekali klik di Windows untuk menghasilkan `target\x86_64-pc-windows-msvc\release\whatsapp-rust.exe`.
-- `.github/workflows/release-exe.yml` — Pipeline otomatis GitHub Actions untuk mengompilasi artefak `whatsapp-rust.exe` di cloud.
-
-## Cara Build File `.exe` di Windows
-
-1. Pastikan [Rust Toolchain](https://rustup.rs) sudah terpasang di Windows.
-2. Jalankan klik ganda pada **`build-exe.bat`**, atau jalankan perintah berikut di terminal:
-   ```bash
-   cargo build --release --target x86_64-pc-windows-msvc
-   ```
-3. File hasil kompilasi siap dijalankan di:
-   ```text
-   target\x86_64-pc-windows-msvc\release\whatsapp-rust.exe
-   ```
+- `Cargo.toml` — Konfigurasi crate Rust dengan dependensi `tao = "0.30"` dan `wry = "0.47"`.
+- `build.rs` — Kompilator manifest DPI Per-Monitor V2 Windows (`winres`).
+- `src-rust/main.rs` — Kode utama Rust yang membuat jendela native Windows, mengatur folder sesi permanen, dan memuat `https://web.whatsapp.com/`.
+- `src-rust/inject.js` — Script CSS/JS yang disuntikkan ke `web.whatsapp.com` agar tampil 100% full-bleed di dalam jendela `.exe` serta mendukung shortcut `Ctrl+R`.
+- `.github/workflows/release-exe.yml` — Workflow GitHub Actions yang otomatis mengompilasi dan mempublikasikan `whatsapp-rust.exe` ke halaman **GitHub Releases**.
