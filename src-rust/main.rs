@@ -13,6 +13,7 @@ use crate::tray::SystemTrayController;
 use crate::ui::WhatsAppNativeApp;
 
 /// Runtime configuration for WhatsApp Native Rust (.exe)
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct NativeConfig {
     pub app_title: String,
@@ -38,6 +39,7 @@ impl Default for NativeConfig {
 
 fn main() -> eframe::Result<()> {
     let config = NativeConfig::default();
+    let app_title = config.app_title.clone();
 
     // Initialize multi-threaded async Tokio runtime with minimal worker footprint (2 threads)
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -59,13 +61,13 @@ fn main() -> eframe::Result<()> {
     });
 
     // Initialize Windows System Tray Controller
-    let tray_controller = SystemTrayController::initialize(&config.app_title);
+    let tray_controller = SystemTrayController::initialize(&app_title);
 
     // Configure ultra-lightweight native Windows viewport (eframe / glow OpenGL/DirectX backend)
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title(&config.app_title)
-        .with_inner_size([1180.0, 760.0])
-        .with_min_inner_size([840.0, 540.0])
+        .with_title(&app_title)
+        .with_inner_size([1180.0_f32, 760.0_f32])
+        .with_min_inner_size([840.0_f32, 540.0_f32])
         .with_decorations(true);
 
     if config.always_on_top {
@@ -81,7 +83,7 @@ fn main() -> eframe::Result<()> {
     };
 
     eframe::run_native(
-        &config.app_title,
+        &app_title,
         native_options,
         Box::new(move |cc| {
             Ok(Box::new(WhatsAppNativeApp::new(

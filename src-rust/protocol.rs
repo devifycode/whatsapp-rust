@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum DeliveryStatus {
     Sending,
@@ -16,6 +17,7 @@ pub enum DeliveryStatus {
     Read,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChatMessage {
     pub id: String,
@@ -27,6 +29,7 @@ pub struct ChatMessage {
     pub byte_len: usize,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConversationThread {
     pub id: String,
@@ -39,6 +42,7 @@ pub struct ConversationThread {
     pub messages: Vec<ChatMessage>,
 }
 
+#[allow(dead_code)]
 pub struct WhatsAppNoiseClient {
     pub connected: bool,
     pub device_id: String,

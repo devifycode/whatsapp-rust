@@ -12,6 +12,7 @@ use crate::protocol::WhatsAppNoiseClient;
 use crate::tray::SystemTrayController;
 use crate::NativeConfig;
 
+#[allow(dead_code)]
 pub struct WhatsAppNativeApp {
     config: NativeConfig,
     protocol: Arc<Mutex<WhatsAppNoiseClient>>,
@@ -57,46 +58,46 @@ impl eframe::App for WhatsAppNativeApp {
 
         // 1. Leftmost Vertical Navigation Rail (#202C33)
         egui::SidePanel::left("wa_nav_rail")
-            .exact_width(58.0)
+            .exact_width(58.0_f32)
             .frame(egui::Frame::none().fill(Color32::from_rgb(32, 44, 51)))
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add_space(14.0);
-                    let _ = ui.button(RichText::new("💬").size(18.0));
-                    ui.add_space(10.0);
-                    let _ = ui.button(RichText::new("📞").size(18.0));
-                    ui.add_space(10.0);
-                    let _ = ui.button(RichText::new("⭕").size(18.0));
-                    ui.add_space(10.0);
-                    let _ = ui.button(RichText::new("👥").size(18.0));
+                    ui.add_space(14.0_f32);
+                    let _ = ui.button(RichText::new("💬").size(18.0_f32));
+                    ui.add_space(10.0_f32);
+                    let _ = ui.button(RichText::new("📞").size(18.0_f32));
+                    ui.add_space(10.0_f32);
+                    let _ = ui.button(RichText::new("⭕").size(18.0_f32));
+                    ui.add_space(10.0_f32);
+                    let _ = ui.button(RichText::new("👥").size(18.0_f32));
                 });
             });
 
         // 2. Chat List Column (#111B21)
         egui::SidePanel::left("wa_chat_list")
-            .exact_width(340.0)
+            .exact_width(340.0_f32)
             .frame(egui::Frame::none().fill(Color32::from_rgb(17, 27, 33)))
             .show(ctx, |ui| {
-                ui.add_space(12.0);
+                ui.add_space(12.0_f32);
                 ui.horizontal(|ui| {
-                    ui.add_space(14.0);
+                    ui.add_space(14.0_f32);
                     ui.label(
                         RichText::new("Chat")
                             .strong()
-                            .size(21.0)
+                            .size(21.0_f32)
                             .color(Color32::from_rgb(233, 237, 239)),
                     );
                 });
-                ui.add_space(8.0);
+                ui.add_space(8.0_f32);
                 ui.horizontal(|ui| {
-                    ui.add_space(12.0);
+                    ui.add_space(12.0_f32);
                     ui.add(
                         egui::TextEdit::singleline(&mut self.search_query)
                             .hint_text("Cari atau mulai chat baru")
-                            .desired_width(310.0),
+                            .desired_width(310.0_f32),
                     );
                 });
-                ui.add_space(8.0);
+                ui.add_space(8.0_f32);
                 ui.separator();
 
                 egui::ScrollArea::vertical().show(ui, |ui| {
@@ -118,14 +119,14 @@ impl eframe::App for WhatsAppNativeApp {
 
                         egui::Frame::none()
                             .fill(bg)
-                            .inner_margin(egui::Margin::symmetric(14.0, 12.0))
+                            .inner_margin(egui::Margin::symmetric(14.0_f32, 12.0_f32))
                             .show(ui, |ui| {
                                 if ui
                                     .add(
                                         egui::Label::new(
                                             RichText::new(&thread.name)
                                                 .strong()
-                                                .size(15.0)
+                                                .size(15.0_f32)
                                                 .color(Color32::from_rgb(233, 237, 239)),
                                         )
                                         .sense(egui::Sense::click()),
@@ -148,13 +149,13 @@ impl eframe::App for WhatsAppNativeApp {
                     // Chat Header (#202C33)
                     egui::Frame::none()
                         .fill(Color32::from_rgb(32, 44, 51))
-                        .inner_margin(egui::Margin::symmetric(16.0, 12.0))
+                        .inner_margin(egui::Margin::symmetric(16.0_f32, 12.0_f32))
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
                                 ui.label(
                                     RichText::new(&thread.name)
                                         .strong()
-                                        .size(16.0)
+                                        .size(16.0_f32)
                                         .color(Color32::from_rgb(233, 237, 239)),
                                 );
                                 ui.label(
@@ -163,7 +164,7 @@ impl eframe::App for WhatsAppNativeApp {
                                     } else {
                                         "terakhir dilihat baru saja"
                                     })
-                                    .size(12.0)
+                                    .size(12.0_f32)
                                     .color(Color32::from_rgb(134, 150, 160)),
                                 );
                                 ui.with_layout(
@@ -175,11 +176,11 @@ impl eframe::App for WhatsAppNativeApp {
                                         ui.label(
                                             RichText::new(format!(
                                                 "{:.1} MB / {} MB RAM",
-                                                client.working_set_kb as f32 / 1024.0,
+                                                client.working_set_kb as f32 / 1024.0_f32,
                                                 self.config.ram_limit_mb
                                             ))
                                             .monospace()
-                                            .size(11.0)
+                                            .size(11.0_f32)
                                             .color(Color32::from_rgb(0, 168, 132)),
                                         );
                                     },
@@ -190,9 +191,9 @@ impl eframe::App for WhatsAppNativeApp {
                     // Messages Area
                     egui::ScrollArea::vertical()
                         .auto_shrink([false, false])
-                        .max_height(ui.available_height() - 62.0)
+                        .max_height(ui.available_height() - 62.0_f32)
                         .show(ui, |ui| {
-                            ui.add_space(12.0);
+                            ui.add_space(12.0_f32);
                             for msg in &thread.messages {
                                 let bubble_color = if msg.from_me {
                                     Color32::from_rgb(0, 92, 75) // #005C4B Outgoing
@@ -201,31 +202,31 @@ impl eframe::App for WhatsAppNativeApp {
                                 };
                                 egui::Frame::none()
                                     .fill(bubble_color)
-                                    .rounding(Rounding::same(8.0))
-                                    .inner_margin(egui::Margin::symmetric(12.0, 8.0))
-                                    .stroke(Stroke::new(0.5, Color32::from_rgb(42, 57, 66)))
+                                    .rounding(Rounding::same(8.0_f32))
+                                    .inner_margin(egui::Margin::symmetric(12.0_f32, 8.0_f32))
+                                    .stroke(Stroke::new(0.5_f32, Color32::from_rgb(42, 57, 66)))
                                     .show(ui, |ui| {
                                         ui.label(
                                             RichText::new(&msg.text)
-                                                .size(14.2)
+                                                .size(14.2_f32)
                                                 .color(Color32::from_rgb(233, 237, 239)),
                                         );
                                         ui.horizontal(|ui| {
                                             ui.label(
                                                 RichText::new(&msg.timestamp)
-                                                    .size(11.0)
+                                                    .size(11.0_f32)
                                                     .color(Color32::from_rgb(134, 150, 160)),
                                             );
                                             if msg.from_me {
                                                 ui.label(
                                                     RichText::new("✓✓")
-                                                        .size(11.0)
+                                                        .size(11.0_f32)
                                                         .color(Color32::from_rgb(83, 189, 235)),
                                                 );
                                             }
                                         });
                                     });
-                                ui.add_space(6.0);
+                                ui.add_space(6.0_f32);
                             }
                         });
                 }
@@ -234,17 +235,17 @@ impl eframe::App for WhatsAppNativeApp {
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
                     egui::Frame::none()
                         .fill(Color32::from_rgb(32, 44, 51))
-                        .inner_margin(egui::Margin::symmetric(16.0, 10.0))
+                        .inner_margin(egui::Margin::symmetric(16.0_f32, 10.0_f32))
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
                                 let response = ui.add(
                                     egui::TextEdit::singleline(&mut self.composer_input)
                                         .hint_text("Ketik pesan")
-                                        .desired_width(ui.available_width() - 84.0),
+                                        .desired_width(ui.available_width() - 84.0_f32),
                                 );
                                 let send_clicked = ui
                                     .add_sized(
-                                        Vec2::new(72.0, 36.0),
+                                        Vec2::new(72.0_f32, 36.0_f32),
                                         egui::Button::new(
                                             RichText::new("Kirim").color(Color32::WHITE).strong(),
                                         )

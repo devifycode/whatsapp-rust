@@ -3,11 +3,13 @@
 
 use notify_rust::Notification;
 
+#[allow(dead_code)]
 pub struct SystemTrayController {
     pub app_name: String,
     pub muted: bool,
 }
 
+#[allow(dead_code)]
 impl SystemTrayController {
     pub fn initialize(app_name: &str) -> Self {
         Self {
