@@ -280,19 +280,19 @@ let conversations: ConversationThread[] = [
 ];
 
 const RUST_REPO_FILES = [
-  { path: 'Cargo.toml', label: 'Cargo.toml', description: 'Manifes crate Rust (tao + wry WebView2 wrapper untuk https://web.whatsapp.com)' },
+  { path: 'Cargo.toml', label: 'Cargo.toml', description: 'Manifes crate Rust (2 target .exe: whatsapp-rust.exe & WhatsApp-Rust-Setup.exe)' },
   { path: 'build.rs', label: 'build.rs', description: 'Kompilator resource Windows (winres) yang menyematkan assets/icon.ico' },
   { path: 'src-rust/main.rs', label: 'src-rust/main.rs', description: 'Entry point .exe dengan ikon kustom, lokasi penyimpanan & IPC native WebView2 zoom' },
   { path: 'src-rust/inject.js', label: 'src-rust/inject.js', description: 'Script injeksi full-window 100% + Auto Zoom In/Out (Ctrl+Scroll, Ctrl+Plus/Minus, Ctrl+0)' },
-  { path: 'installer.nsi', label: 'installer.nsi', description: 'Script NSIS Windows Installer (WhatsApp-Rust-Setup.exe) dengan pemilih folder penyimpanan' },
-  { path: '.github/workflows/release-exe.yml', label: '.github/workflows/release-exe.yml', description: 'GitHub Actions: Build WhatsApp-Rust-Setup.exe & portable .exe ke GitHub Releases' },
-  { path: 'build-exe.bat', label: 'build-exe.bat', description: 'Script 1-klik kompilasi .exe di Windows' },
+  { path: 'src-rust/installer.rs', label: 'src-rust/installer.rs', description: 'Kode Rust GUI Installer (WhatsApp-Rust-Setup.exe) dengan Browse folder penyimpanan' },
+  { path: '.github/workflows/release-exe.yml', label: '.github/workflows/release-exe.yml', description: 'GitHub Actions: Build WhatsApp-Rust-Setup.exe & portable .exe via Cargo ke GitHub Releases' },
+  { path: 'build-exe.bat', label: 'build-exe.bat', description: 'Script 1-klik kompilasi .exe & Setup Installer di Windows' },
 ];
 
 function syncCargoTomlToDisk(cfg: RustExeConfig) {
   const cargoContent = `[package]
 name = "${cfg.binaryName.replace(/\\.exe$/i, '')}"
-version = "1.0.0"
+version = "1.0.2"
 edition = "2021"
 authors = ["WhatsApp Rust Contributors"]
 description = "Ultra-lightweight Rust Native Wrapper (.exe) for WhatsApp Web (https://web.whatsapp.com) using OS WebView2"
@@ -302,6 +302,10 @@ build = "build.rs"
 [[bin]]
 name = "${cfg.binaryName.replace(/\\.exe$/i, '')}"
 path = "src-rust/main.rs"
+
+[[bin]]
+name = "WhatsApp-Rust-Setup"
+path = "src-rust/installer.rs"
 
 [dependencies]
 tao = "0.30"

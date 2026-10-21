@@ -1,6 +1,6 @@
 [package]
 name = "whatsapp-rust"
-version = "1.0.0"
+version = "1.0.2"
 edition = "2021"
 authors = ["WhatsApp Rust Contributors"]
 description = "Ultra-lightweight Rust Native Wrapper (.exe) for WhatsApp Web (https://web.whatsapp.com) using OS WebView2"
@@ -10,6 +10,10 @@ build = "build.rs"
 [[bin]]
 name = "whatsapp-rust"
 path = "src-rust/main.rs"
+
+[[bin]]
+name = "WhatsApp-Rust-Setup"
+path = "src-rust/installer.rs"
 
 [dependencies]
 # Native cross-platform windowing & OS WebView2 engine (Tauri core crates)
